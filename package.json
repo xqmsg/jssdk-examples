@@ -7,9 +7,9 @@
     "test": "tests"
   },
   "scripts": {
-    "dev-test": "parcel ./tests/html/tests.html",
-    "dev": "parcel ./demo/html/demo.html",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "start": "parcel ./demo/html/demo.html",
+    "test": "parcel ./tests/html/tests.html"
   },
   "keywords": [],
   "author": "XQ Message",

@@ -8,14 +8,14 @@ To run the sample applications, simply run:
 To run the Demo application, first input your API keys in the `XQSDK` configuration in [demo.js](#./demo/demo.js) then run:
 
 ```sh
-yarn dev
+yarn start
 ```
 
 **Tests**
 To run the Tests application, first input your API keys in the `XQSDK` configuration in [TestLauncher.js](#./tests/TestLauncher.js) then run:
 
 ```sh
-yarn dev-test
+yarn test
 ```
 
 Initially the user will need to register with the XQ Framework. To do so, they click the **Register** button which prompts them for their email. A PIN code will be sent to that email.
