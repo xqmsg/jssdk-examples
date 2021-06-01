@@ -1,18 +1,18 @@
 {
   "name": "@xqmsg/jssdk-example",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A sample demonstration of the XQ Message Javascript SDK",
   "main": "index.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "dev-test": "parcel ./tests/html/tests.html",
-    "dev": "parcel ./demo/html/demo.html",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "start": "parcel ./demo/html/demo.html",
+    "test": "parcel ./tests/html/tests.html"
   },
   "keywords": [],
-  "author": "",
+  "author": "XQ Message",
   "license": "ISC",
   "dependencies": {
     "@xqmsg/jssdk-core": "^1.0.6",
