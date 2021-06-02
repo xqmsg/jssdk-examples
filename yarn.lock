@@ -21,7 +21,7 @@
   resolved "https://registry.yarnpkg.com/@babel/compat-data/-/compat-data-7.14.0.tgz#a901128bce2ad02565df95e6ecbf195cf9465919"
   integrity sha512-vu9V3uMM/1o5Hl5OekMUowo3FqXLJSw+s+66nt0fSWVWTtmosdzn45JHOB3cPtZoe6CTBDzvSw0RdOY85Q37+Q==
 
-"@babel/core@^7.12.0":
+"@babel/core@^7.0.0-0", "@babel/core@^7.12.0":
   version "7.14.3"
   resolved "https://registry.yarnpkg.com/@babel/core/-/core-7.14.3.tgz#5395e30405f0776067fbd9cf0884f15bfb770a38"
   integrity sha512-jB5AmTKOCSJIZ72sd78ECEhuPiDMKlQdDI/4QRI6lzYATx5SSogS1oQA2AoPecRCknm30gHi2l+QVvNUu3wZAg==
@@ -1601,10 +1601,10 @@
   resolved "https://registry.yarnpkg.com/@types/q/-/q-1.5.4.tgz#15925414e0ad2cd765bfef58842f7e26a7accb24"
   integrity sha512-1HcDas8SEj4z1Wc696tH56G8OlRaH/sqZOynNNB+HF0WOeXPaxTtbYzJY2oEfiUxjSKjhCKr+MvR7dCHcEelug==
 
-"@xqmsg/jssdk-core@^1.0.6":
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/@xqmsg/jssdk-core/-/jssdk-core-1.0.6.tgz#bd1b63a58accf563d2b43de29ed61e6838839409"
-  integrity sha512-g1UhRhScWT80ixWu82w4n0G15zDMcJWmVoKYrDrRbpGJbUbJNSWPp3PaYEchcaY5NJer54zH3WHs/TQkbPxdqA==
+"@xqmsg/jssdk-core@1.0.15":
+  version "1.0.15"
+  resolved "https://registry.yarnpkg.com/@xqmsg/jssdk-core/-/jssdk-core-1.0.15.tgz#20f1d95074593289d155294a387cf5877e762cf8"
+  integrity sha512-L0TKkHJB9s32EGGpkL/HREE/0tAGpvB/8evZMT8XQSRbblaCxl+rqlftNMiqjMKwvHs6Y4JttJJNCp+k7o5/tA==
   dependencies:
     crypto-js "3.1.9-1"
 
