@@ -9,13 +9,15 @@
   "scripts": {
     "lint": "eslint .",
     "start": "parcel ./demo/html/demo.html",
-    "test": "parcel ./tests/html/tests.html"
+    "test": "parcel ./tests/html/tests.html",
+    "clean": "rm -rf node_modules dist .parcel-cache"
   },
   "keywords": [],
   "author": "XQ Message",
   "license": "ISC",
   "dependencies": {
-    "@xqmsg/jssdk-core": "^1.0.6",
+    "@babel/core": "^7.0.0-0",
+    "@xqmsg/jssdk-core": "1.0.15",
     "parcel": "^2.0.0-beta.2"
   },
   "devDependencies": {

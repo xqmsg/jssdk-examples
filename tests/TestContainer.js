@@ -1433,26 +1433,57 @@ export default class TestContainer {
                   [GeneratePacket.EXPIRES_HOURS]: 5,
                   [GeneratePacket.DELETE_ON_RECEIPT]: false,
                 })
-                .then((uploadResponse) => {
-                  switch (uploadResponse.status) {
+                .then((packetValidationResponse) => {
+                  switch (packetValidationResponse.status) {
                     case ServerResponse.OK: {
-                      let packet = uploadResponse.payload;
-                      return new ValidatePacket(self.xqsdk)
-                        .supplyAsync({ [ValidatePacket.PACKET]: packet })
-                        .then(function (packetValidationResponse) {
-                          switch (packetValidationResponse.status) {
-                            case ServerResponse.OK: {
-                              const locatorKey =
-                                packetValidationResponse.payload;
-                              return new FetchKey(self.xqsdk)
+                      switch (packetValidationResponse.status) {
+                        case ServerResponse.OK: {
+                          const locatorKey = packetValidationResponse.payload;
+                          return new FetchKey(self.xqsdk)
+                            .supplyAsync({
+                              [Decrypt.LOCATOR_KEY]: locatorKey,
+                            })
+                            .then((serverResponse) => {
+                              switch (serverResponse.status) {
+                                case ServerResponse.OK: {
+                                  let key = serverResponse.payload;
+                                  console.info("Retrieved Key: " + key);
+                                  return serverResponse;
+                                }
+                                default: {
+                                  let error = serverResponse.payload;
+                                  try {
+                                    error = JSON.parse(error).status;
+                                  } catch (e) {
+                                    return;
+                                  }
+                                  console.error("failed , reason: ", error);
+                                  return serverResponse;
+                                }
+                              }
+                            })
+                            .then((na) => {
+                              if (na.status === ServerResponse.ERROR) {
+                                return na;
+                              }
+                              console.warn("Test Key Expiration");
+                              return new CheckKeyExpiration(self.xqsdk)
                                 .supplyAsync({
                                   [Decrypt.LOCATOR_KEY]: locatorKey,
                                 })
                                 .then((serverResponse) => {
                                   switch (serverResponse.status) {
                                     case ServerResponse.OK: {
-                                      let key = serverResponse.payload;
-                                      console.info("Retrieved Key: " + key);
+                                      let data = serverResponse.payload;
+                                      let expiresInSeconds =
+                                        data[CheckKeyExpiration.EXPIRES_IN];
+                                      let expiresOn = new Date(
+                                        new Date().getTime() +
+                                          expiresInSeconds * 1000
+                                      );
+                                      console.info(
+                                        "Key Expires On " + expiresOn
+                                      );
                                       return serverResponse;
                                     }
                                     default: {
@@ -1466,191 +1497,137 @@ export default class TestContainer {
                                       return serverResponse;
                                     }
                                   }
-                                })
-                                .then((na) => {
-                                  if (na.status === ServerResponse.ERROR) {
-                                    return na;
-                                  }
-                                  console.warn("Test Key Expiration");
-                                  return new CheckKeyExpiration(self.xqsdk)
-                                    .supplyAsync({
-                                      [Decrypt.LOCATOR_KEY]: locatorKey,
-                                    })
-                                    .then((serverResponse) => {
-                                      switch (serverResponse.status) {
-                                        case ServerResponse.OK: {
-                                          let data = serverResponse.payload;
-                                          let expiresInSeconds =
-                                            data[CheckKeyExpiration.EXPIRES_IN];
-                                          let expiresOn = new Date(
-                                            new Date().getTime() +
-                                              expiresInSeconds * 1000
-                                          );
-                                          console.info(
-                                            "Key Expires On " + expiresOn
-                                          );
-                                          return serverResponse;
-                                        }
-                                        default: {
-                                          let error = serverResponse.payload;
-                                          try {
-                                            error = JSON.parse(error).status;
-                                          } catch (e) {
-                                            return;
-                                          }
-                                          console.error(
-                                            "failed , reason: ",
-                                            error
-                                          );
-                                          return serverResponse;
-                                        }
-                                      }
-                                    });
-                                })
-                                .then((na) => {
-                                  if (na.status === ServerResponse.ERROR) {
-                                    return na;
-                                  }
-                                  console.warn("Test Revoke Key Access");
-
-                                  return new RevokeKeyAccess(self.xqsdk)
-                                    .supplyAsync({
-                                      [RevokeKeyAccess.LOCATOR_KEY]: locatorKey,
-                                    })
-                                    .then((serverResponse) => {
-                                      switch (serverResponse.status) {
-                                        case ServerResponse.OK: {
-                                          let noContent =
-                                            serverResponse.payload;
-                                          console.info("Data: " + noContent);
-                                          return serverResponse;
-                                        }
-                                        default: {
-                                          let error = serverResponse.payload;
-                                          try {
-                                            error = JSON.parse(error).status;
-                                          } catch (e) {
-                                            return;
-                                          }
-                                          console.error(
-                                            "failed , reason: ",
-                                            error
-                                          );
-                                          return serverResponse;
-                                        }
-                                      }
-                                    });
-                                })
-                                .then((na) => {
-                                  if (na.status === ServerResponse.ERROR) {
-                                    return na;
-                                  }
-                                  console.warn("Test Revoke User Access");
-
-                                  let user = self.xqsdk
-                                    .getCache()
-                                    .getActiveProfile(true);
-
-                                  return new RevokeUserAccess(self.xqsdk)
-                                    .supplyAsync({
-                                      [RevokeUserAccess.USER]: user,
-                                      [RevokeUserAccess.RECIPIENTS]: [user],
-                                      [RevokeUserAccess.LOCATOR_KEY]:
-                                        locatorKey,
-                                    })
-                                    .then((serverResponse) => {
-                                      switch (serverResponse.status) {
-                                        case ServerResponse.OK: {
-                                          let noContent =
-                                            serverResponse.payload;
-                                          console.info(
-                                            "Status: " + ServerResponse.OK
-                                          );
-                                          console.info("Data: " + noContent);
-                                          return serverResponse;
-                                        }
-                                        default: {
-                                          let error = serverResponse.payload;
-                                          try {
-                                            error = JSON.parse(error).status;
-                                          } catch (e) {
-                                            return;
-                                          }
-                                          console.error(
-                                            "failed , reason: ",
-                                            error
-                                          );
-                                          return serverResponse;
-                                        }
-                                      }
-                                    });
-                                })
-                                .then((na) => {
-                                  if (na.status === ServerResponse.ERROR) {
-                                    return na;
-                                  }
-                                  console.warn("Test Grant User Access");
-
-                                  let user = self.xqsdk
-                                    .getCache()
-                                    .getActiveProfile(true);
-
-                                  return new GrantUserAccess(self.xqsdk)
-                                    .supplyAsync({
-                                      [GrantUserAccess.RECIPIENTS]: [user],
-                                      [GrantUserAccess.LOCATOR_TOKEN]:
-                                        locatorKey,
-                                    })
-                                    .then((serverResponse) => {
-                                      switch (serverResponse.status) {
-                                        case ServerResponse.OK: {
-                                          let noContent =
-                                            serverResponse.payload;
-                                          console.info(
-                                            "Status: " + ServerResponse.OK
-                                          );
-                                          console.info("Data: " + noContent);
-                                          return serverResponse;
-                                        }
-                                        default: {
-                                          let error = serverResponse.payload;
-                                          try {
-                                            error = JSON.parse(error).status;
-                                          } catch (e) {
-                                            return;
-                                          }
-                                          console.error(
-                                            "failed , reason: ",
-                                            error
-                                          );
-                                          return serverResponse;
-                                        }
-                                      }
-                                    });
                                 });
-                            }
-                            default: {
-                              let error = packetValidationResponse.payload;
-                              try {
-                                error = JSON.parse(error).status;
-                              } catch (e) {
-                                return;
+                            })
+                            .then((na) => {
+                              if (na.status === ServerResponse.ERROR) {
+                                return na;
                               }
-                              console.error("failed , reason: ", error);
-                              return packetValidationResponse;
-                            }
+                              console.warn("Test Revoke Key Access");
+
+                              return new RevokeKeyAccess(self.xqsdk)
+                                .supplyAsync({
+                                  [RevokeKeyAccess.LOCATOR_KEY]: locatorKey,
+                                })
+                                .then((serverResponse) => {
+                                  switch (serverResponse.status) {
+                                    case ServerResponse.OK: {
+                                      let noContent = serverResponse.payload;
+                                      console.info("Data: " + noContent);
+                                      return serverResponse;
+                                    }
+                                    default: {
+                                      let error = serverResponse.payload;
+                                      try {
+                                        error = JSON.parse(error).status;
+                                      } catch (e) {
+                                        return;
+                                      }
+                                      console.error("failed , reason: ", error);
+                                      return serverResponse;
+                                    }
+                                  }
+                                });
+                            })
+                            .then((na) => {
+                              if (na.status === ServerResponse.ERROR) {
+                                return na;
+                              }
+                              console.warn("Test Revoke User Access");
+
+                              let user = self.xqsdk
+                                .getCache()
+                                .getActiveProfile(true);
+
+                              return new RevokeUserAccess(self.xqsdk)
+                                .supplyAsync({
+                                  [RevokeUserAccess.USER]: user,
+                                  [RevokeUserAccess.RECIPIENTS]: [user],
+                                  [RevokeUserAccess.LOCATOR_KEY]: locatorKey,
+                                })
+                                .then((serverResponse) => {
+                                  switch (serverResponse.status) {
+                                    case ServerResponse.OK: {
+                                      let noContent = serverResponse.payload;
+                                      console.info(
+                                        "Status: " + ServerResponse.OK
+                                      );
+                                      console.info("Data: " + noContent);
+                                      return serverResponse;
+                                    }
+                                    default: {
+                                      let error = serverResponse.payload;
+                                      try {
+                                        error = JSON.parse(error).status;
+                                      } catch (e) {
+                                        return;
+                                      }
+                                      console.error("failed , reason: ", error);
+                                      return serverResponse;
+                                    }
+                                  }
+                                });
+                            })
+                            .then((na) => {
+                              if (na.status === ServerResponse.ERROR) {
+                                return na;
+                              }
+                              console.warn("Test Grant User Access");
+
+                              let user = self.xqsdk
+                                .getCache()
+                                .getActiveProfile(true);
+
+                              return new GrantUserAccess(self.xqsdk)
+                                .supplyAsync({
+                                  [GrantUserAccess.RECIPIENTS]: [user],
+                                  [GrantUserAccess.LOCATOR_TOKEN]: locatorKey,
+                                })
+                                .then((serverResponse) => {
+                                  switch (serverResponse.status) {
+                                    case ServerResponse.OK: {
+                                      let noContent = serverResponse.payload;
+                                      console.info(
+                                        "Status: " + ServerResponse.OK
+                                      );
+                                      console.info("Data: " + noContent);
+                                      return serverResponse;
+                                    }
+                                    default: {
+                                      let error = serverResponse.payload;
+                                      try {
+                                        error = JSON.parse(error).status;
+                                      } catch (e) {
+                                        return;
+                                      }
+                                      console.error("failed , reason: ", error);
+                                      return serverResponse;
+                                    }
+                                  }
+                                });
+                            });
+                        }
+                        default: {
+                          let error = packetValidationResponse.payload;
+                          try {
+                            error = JSON.parse(error).status;
+                          } catch (e) {
+                            return;
                           }
-                        });
+                          console.error("failed , reason: ", error);
+                          return packetValidationResponse;
+                        }
+                      }
                     }
                     default: {
-                      let error = uploadResponse.payload;
+                      let error = packetValidationResponse.payload;
                       try {
                         error = JSON.parse(error).status;
                       } catch (e) {
                         return;
                       }
                       console.error("failed , reason: ", error);
-                      return uploadResponse;
+                      return packetValidationResponse;
                     }
                   }
                 });
