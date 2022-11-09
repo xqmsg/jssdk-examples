@@ -11,8 +11,8 @@ oReq.open("GET", "/tests/resources/utf-8-sampler.txt");
 
 oReq.addEventListener("load", function () {
   const xqsdk = new XQSDK({
-    XQ_API_KEY: "YOUR_XQ_API_KEY",
-    DASHBOARD_API_KEY: "YOUR_DASHBOARD_API_KEY",
+    DASHBOARD_API_KEY: "b43cefa1-b75b-4152-8ebd-4bf982f71e23-eb81b188-2c25-4d75-8375-beed88a76e2b",
+    XQ_API_KEY: "b3bdf142-791d-41a7-9059-74d681caed1f-98a38439-8781-4617-8560-1030b0a9026a"
   });
 
   const container = new TestContainer(xqsdk, this.responseText);
