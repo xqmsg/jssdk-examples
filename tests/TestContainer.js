@@ -6,7 +6,8 @@ import {
   CheckApiKey,
   CheckKeyExpiration,
   CombineAuthorizations,
-  DashboardLogin,
+  CommunicationsEnum,
+  DashboardLoginVerify,
   Decrypt,
   DeleteAuthorization,
   DeleteSubscriber,
@@ -16,12 +17,11 @@ import {
   FetchKey,
   FileDecrypt,
   FileEncrypt,
-  FindContacts,
   FindUserGroups,
-  GeneratePacket,
   GetApplications,
+  GetContacts,
   GetSettings,
-  GetUserInfo,
+  GetSubscriberInfo,
   GrantUserAccess,
   NotificationEnum,
   RemoveContact,
@@ -32,7 +32,6 @@ import {
   ServerResponse,
   UpdateSettings,
   UpdateUserGroup,
-  ValidatePacket,
 } from "@xqmsg/jssdk-core";
 
 /**
@@ -92,7 +91,7 @@ export default class TestContainer {
                   resolved(new ServerResponse(ServerResponse.OK, 200, {}));
                 });
               } catch (err) {
-                return new DashboardLogin(self.xqsdk)
+                return new DashboardLoginVerify(self.xqsdk)
                   .supplyAsync(null)
                   .then((serverResponse) => {
                     switch (serverResponse.status) {
@@ -408,14 +407,14 @@ export default class TestContainer {
             if (this.enabled) {
               console.warn(label);
 
-              return new FindContacts(self.xqsdk)
-                .supplyAsync({ [FindContacts.FILTER]: "%" })
+              return new GetContacts(self.xqsdk)
+                .supplyAsync({ [GetContacts.FILTER]: "%" })
                 .then((serverResponse) => {
                   switch (serverResponse.status) {
                     case ServerResponse.OK: {
                       let data = serverResponse.payload;
 
-                      let contacts = data[FindContacts.CONTACTS];
+                      let contacts = data["contacts"];
 
                       let found = contacts.find(function (contact) {
                         return (
@@ -424,7 +423,7 @@ export default class TestContainer {
                       });
 
                       let payload = {
-                        [DisableContact.ID]: found[FindContacts.ID],
+                        [DisableContact.ID]: found[GetContacts.ID],
                       };
 
                       return new DisableContact(self.xqsdk)
@@ -478,14 +477,14 @@ export default class TestContainer {
             if (this.enabled) {
               console.warn(label);
 
-              return new FindContacts(self.xqsdk)
-                .supplyAsync({ [FindContacts.FILTER]: "%" })
+              return new GetContacts(self.xqsdk)
+                .supplyAsync({ [GetContacts.FILTER]: "%" })
                 .then((serverResponse) => {
                   switch (serverResponse.status) {
                     case ServerResponse.OK: {
                       let data = serverResponse.payload;
 
-                      let contacts = data[FindContacts.CONTACTS];
+                      let contacts = data["contacts"];
 
                       let found = contacts.find(function (contact) {
                         return (
@@ -494,7 +493,7 @@ export default class TestContainer {
                       });
 
                       let payload = {
-                        [DisableContact.ID]: found[FindContacts.ID],
+                        [DisableContact.ID]: found[GetContacts.ID],
                       };
 
                       return new RemoveContact(self.xqsdk)
@@ -548,19 +547,19 @@ export default class TestContainer {
             if (this.enabled) {
               console.warn(label);
 
-              return new GetUserInfo(self.xqsdk)
+              return new GetSubscriberInfo(self.xqsdk)
                 .supplyAsync(null)
                 .then((serverResponse) => {
                   switch (serverResponse.status) {
                     case ServerResponse.OK: {
                       let data = serverResponse.payload;
 
-                      let id = data[GetUserInfo.ID];
-                      let usr = data[GetUserInfo.USER];
-                      let firstName = data[GetUserInfo.FIRST_NAME];
-                      let lastName = data[GetUserInfo.LAST_NAME];
+                      let id = data[GetSubscriberInfo.ID];
+                      let usr = data[GetSubscriberInfo.USER];
+                      let firstName = data[GetSubscriberInfo.FIRST_NAME];
+                      let lastName = data[GetSubscriberInfo.LAST_NAME];
                       let subscriptionStatus =
-                        data[GetUserInfo.SUBSCRIPTION_STATUS];
+                        data[GetSubscriberInfo.SUBSCRIPTION_STATUS];
 
                       console.info("Id: " + id);
                       console.info("User: " + usr);
@@ -723,7 +722,7 @@ export default class TestContainer {
             if (this.enabled) {
               console.warn(label);
 
-              var algorithm = self.xqsdk.getAlgorithm(
+              const algorithm = self.xqsdk.getAlgorithm(
                 self.xqsdk.OTPv2_ALGORITHM
               );
 
@@ -806,7 +805,9 @@ export default class TestContainer {
             if (this.enabled) {
               console.warn(label);
 
-              var algorithm = self.xqsdk.getAlgorithm(self.xqsdk.AES_ALGORITHM);
+              const algorithm = self.xqsdk.getAlgorithm(
+                self.xqsdk.AES_ALGORITHM
+              );
 
               let text =
                 "|¬ællø (Hello)  AESEncryption! Here is a piece of sample text. Can you encrüpt it, hö, hö ? :) ";
@@ -890,27 +891,29 @@ export default class TestContainer {
               let text =
                 "Hello OTPV2 Encrypt test! Here is a bit of sample text :) Übermäßig";
 
-              var algorithm = self.xqsdk.getAlgorithm(
+              const algorithm = self.xqsdk.getAlgorithm(
                 self.xqsdk.OTPv2_ALGORITHM
               );
 
-              var locatorKey = null;
-              var encryptedText = null;
+              let locatorToken = null;
+              let encryptedText = null;
 
               return new Encrypt(self.xqsdk, algorithm)
                 .supplyAsync({
                   [Encrypt.TEXT]: text,
                   [Encrypt.RECIPIENTS]: [user],
                   [Encrypt.EXPIRES_HOURS]: 1,
-                  [Encrypt.DELETE_ON_RECEIPT]: true,
+                  [Encrypt.DELETE_ON_RECEIPT]: false,
+                  [Encrypt.TYPE]: CommunicationsEnum.EMAIL,
                 })
                 .then((serverResponse) => {
                   switch (serverResponse.status) {
                     case ServerResponse.OK: {
                       let data = serverResponse.payload;
 
-                      locatorKey = data[Encrypt.LOCATOR_KEY];
+                      locatorToken = data[Encrypt.LOCATOR_KEY];
                       encryptedText = data[Encrypt.ENCRYPTED_TEXT];
+
                       return serverResponse;
                     }
                     default: {
@@ -932,13 +935,13 @@ export default class TestContainer {
 
                   console.warn(label + "Decrypt Using OTPv2");
 
-                  var algorithm = self.xqsdk.getAlgorithm(
+                  const algorithm = self.xqsdk.getAlgorithm(
                     self.xqsdk.OTPv2_ALGORITHM
                   );
 
                   return new Decrypt(self.xqsdk, algorithm)
                     .supplyAsync({
-                      [Decrypt.LOCATOR_KEY]: locatorKey,
+                      [Decrypt.LOCATOR_KEY]: locatorToken,
                       [Decrypt.ENCRYPTED_TEXT]: encryptedText,
                     })
                     .then((serverResponse) => {
@@ -980,31 +983,31 @@ export default class TestContainer {
               console.warn(label + "Encrypt Using AES");
 
               let user = self.xqsdk.getCache().getActiveProfile(true);
-              let recipients = [user];
 
-              var locatorKey = null;
-              var encryptedText = null;
+              let locatorToken = null;
+              let encryptedText = null;
 
               let text =
                 "Hello AES Encrypt test! Here is a bit of sample text :) Übermäßig";
 
-              var algorithm = self.xqsdk.getAlgorithm(
-                self.xqsdk.OTPv2_ALGORITHM
+              const algorithm = self.xqsdk.getAlgorithm(
+                self.xqsdk.AES_ALGORITHM
               );
 
               return new Encrypt(self.xqsdk, algorithm)
                 .supplyAsync({
                   [Encrypt.TEXT]: text,
-                  [Encrypt.RECIPIENTS]: recipients,
+                  [Encrypt.RECIPIENTS]: [user],
                   [Encrypt.EXPIRES_HOURS]: 1,
                   [Encrypt.DELETE_ON_RECEIPT]: true,
+                  [Encrypt.TYPE]: CommunicationsEnum.EMAIL,
                 })
                 .then((serverResponse) => {
                   switch (serverResponse.status) {
                     case ServerResponse.OK: {
                       let data = serverResponse.payload;
 
-                      locatorKey = data[Encrypt.LOCATOR_KEY];
+                      locatorToken = data[Encrypt.LOCATOR_KEY];
                       encryptedText = data[Encrypt.ENCRYPTED_TEXT];
 
                       return serverResponse;
@@ -1028,13 +1031,13 @@ export default class TestContainer {
 
                   console.warn(label + "Decrypt Using AES");
 
-                  var algorithm = self.xqsdk.getAlgorithm(
-                    self.xqsdk.OTPv2_ALGORITHM
+                  const algorithm = self.xqsdk.getAlgorithm(
+                    self.xqsdk.AES_ALGORITHM
                   );
 
                   return new Decrypt(self.xqsdk, algorithm)
                     .supplyAsync({
-                      [Decrypt.LOCATOR_KEY]: locatorKey,
+                      [Decrypt.LOCATOR_KEY]: locatorToken,
                       [Decrypt.ENCRYPTED_TEXT]: encryptedText,
                     })
                     .then((serverResponse) => {
@@ -1086,7 +1089,7 @@ export default class TestContainer {
                 "utf-8-sampler.txt"
               );
 
-              var algorithm = self.xqsdk.getAlgorithm(
+              const algorithm = self.xqsdk.getAlgorithm(
                 self.xqsdk.OTPv2_ALGORITHM
               );
 
@@ -1103,7 +1106,7 @@ export default class TestContainer {
                 .then(async function (serverResponse) {
                   switch (serverResponse.status) {
                     case ServerResponse.OK: {
-                      var encryptedFile = serverResponse.payload;
+                      const encryptedFile = serverResponse.payload;
                       console.warn(
                         `Encrypted File: ${encryptedFile.name}, ${encryptedFile.size} bytes`
                       );
@@ -1122,7 +1125,7 @@ export default class TestContainer {
                         .then(async function (serverResponse) {
                           switch (serverResponse.status) {
                             case ServerResponse.OK: {
-                              var decryptedFile = serverResponse.payload;
+                              const decryptedFile = serverResponse.payload;
                               console.warn(
                                 `Decrypted File: ${decryptedFile.name}, ${decryptedFile.size} bytes`
                               );
@@ -1168,6 +1171,9 @@ export default class TestContainer {
           statement: function (label) {
             console.warn(label);
 
+            const originalProfile =  self.xqsdk.getCache().getActiveProfile(true);
+            const originalAccessToken =  self.xqsdk.getCache().getXQAccess(originalProfile);
+
             const testUser = self.makeUsers().FIRST;
 
             let payload = {
@@ -1179,23 +1185,27 @@ export default class TestContainer {
             return new AuthorizeAlias(self.xqsdk)
               .supplyAsync(payload)
               .then((serverResponse) => {
-                let testUserToken = serverResponse.payload;
+
+                let aliasUserToken = serverResponse.payload;
+
+                self.xqsdk.getCache().putActiveProfile(originalProfile);
+                self.xqsdk.getCache().putXQAccess(originalProfile, originalAccessToken);
 
                 return new CombineAuthorizations(self.xqsdk)
                   .supplyAsync({
-                    [CombineAuthorizations.TOKENS]: [testUserToken],
+                    [CombineAuthorizations.TOKENS]: [aliasUserToken],
                   })
                   .then((serverResponse) => {
                     switch (serverResponse.status) {
                       case ServerResponse.OK: {
                         let data = serverResponse.payload;
                         let mergedToken =
-                          data[CombineAuthorizations.MERGED_TOKEN];
-                        console.info("Merged Token: " + mergedToken);
-                        let mergeCount =
-                          data[CombineAuthorizations.MERGE_COUNT];
+                          data[CombineAuthorizations.TOKEN];
+                        console.info("The Merged Token: " + mergedToken);
+                        let invalidTokens =
+                          data[CombineAuthorizations.INVALID];
                         console.info(
-                          "Number of tokens combined: " + mergeCount
+                          "Number of invalid tokens: " + (invalidTokens?invalidTokens.length:0)
                         );
                         self.xqsdk.getCache().removeProfile(testUser);
                         return serverResponse;
@@ -1223,7 +1233,9 @@ export default class TestContainer {
             if (this.enabled) {
               console.warn(`${label} (Using Alias)`);
 
-              const originaluser = self.xqsdk.getCache().getActiveProfile(true);
+              const originalProfile =  self.xqsdk.getCache().getActiveProfile(true);
+              const originalAccessToken =  self.xqsdk.getCache().getXQAccess(originalProfile);
+
               const testUser = self.makeUsers().FIRST;
 
               let payload = {
@@ -1250,7 +1262,9 @@ export default class TestContainer {
                           console.info("Data: " + noContent);
 
                           self.xqsdk.getCache().removeProfile(testUser);
-                          self.xqsdk.getCache().putActiveProfile(originaluser);
+
+                          self.xqsdk.getCache().putActiveProfile(originalProfile);
+                          self.xqsdk.getCache().putXQAccess(originalProfile, originalAccessToken);
 
                           return serverResponse;
                         }
@@ -1283,8 +1297,10 @@ export default class TestContainer {
             if (this.enabled) {
               console.warn(`${label} (Using Alias)`);
 
-              const originaluser = self.xqsdk.getCache().getActiveProfile(true);
-              const testUser = self.makeUsers().FIRST;
+              const originalProfile =  self.xqsdk.getCache().getActiveProfile(true);
+              const originalAccessToken =  self.xqsdk.getCache().getXQAccess(originalProfile);
+
+                const testUser = self.makeUsers().FIRST;
 
               let payload = {
                 [AuthorizeAlias.USER]: testUser,
@@ -1310,7 +1326,9 @@ export default class TestContainer {
                           console.info("Data: " + noContent);
 
                           self.xqsdk.getCache().removeProfile(testUser);
-                          self.xqsdk.getCache().putActiveProfile(originaluser);
+
+                          self.xqsdk.getCache().putActiveProfile(originalProfile);
+                          self.xqsdk.getCache().putXQAccess(originalProfile, originalAccessToken);
 
                           return serverResponse;
                         }
@@ -1342,16 +1360,24 @@ export default class TestContainer {
           statement: function (label) {
             if (this.enabled) {
               console.warn(label);
-              let user = self.xqsdk.getCache().getActiveProfile(true);
+
+              const originalProfile =  self.xqsdk.getCache().getActiveProfile(true);
+              const originalAccessToken =  self.xqsdk.getCache().getXQAccess(originalProfile);
+
 
               let payload = {
-                [AuthorizeAlias.USER]: user,
+                [AuthorizeAlias.USER]: 'new-user@email.com',
                 [AuthorizeAlias.FIRST_NAME]: "User",
                 [AuthorizeAlias.LAST_NAME]: "XQMessage",
               };
               return new AuthorizeAlias(self.xqsdk)
                 .supplyAsync(payload)
                 .then((serverResponse) => {
+
+                  //reset profile and xq access token
+                  self.xqsdk.getCache().putActiveProfile(originalProfile);
+                  self.xqsdk.getCache().putXQAccess(originalProfile, originalAccessToken);
+
                   switch (serverResponse.status) {
                     case ServerResponse.OK: {
                       let token = serverResponse.payload;
@@ -1391,7 +1417,7 @@ export default class TestContainer {
                 .then((serverResponse) => {
                   switch (serverResponse.status) {
                     case ServerResponse.OK: {
-                      var scopes = serverResponse.payload[CheckApiKey.SCOPES];
+                      const scopes = serverResponse.payload[CheckApiKey.SCOPES];
                       console.info("Status: " + ServerResponse.OK);
                       console.info(`API Key Scopes: "${scopes}"`);
 
@@ -1424,212 +1450,198 @@ export default class TestContainer {
             if (this.enabled) {
               console.warn(label);
 
-              let user = self.xqsdk.getCache().getActiveProfile(true);
+              const algorithm = self.xqsdk.getAlgorithm(
+                self.xqsdk.OTPv2_ALGORITHM
+              );
 
-              return new GeneratePacket(self.xqsdk)
+              let locatorToken = null;
+
+              return new Encrypt(self.xqsdk, algorithm)
                 .supplyAsync({
-                  [GeneratePacket.KEY]: "1A2B3C4D5E6F7G8H9I10J",
-                  [GeneratePacket.RECIPIENTS]: [user],
-                  [GeneratePacket.EXPIRES_HOURS]: 5,
-                  [GeneratePacket.DELETE_ON_RECEIPT]: false,
+                  [Encrypt.TEXT]: "Test Text",
+                  [Encrypt.RECIPIENTS]: ["user@xqmsg.com"],
+                  [Encrypt.EXPIRES_HOURS]: 1,
+                  [Encrypt.DELETE_ON_RECEIPT]: false,
+                  [Encrypt.TYPE]: CommunicationsEnum.EMAIL,
                 })
-                .then((packetValidationResponse) => {
-                  switch (packetValidationResponse.status) {
+                .then((serverResponse) => {
+                  switch (serverResponse.status) {
                     case ServerResponse.OK: {
-                      switch (packetValidationResponse.status) {
-                        case ServerResponse.OK: {
-                          const locatorKey = packetValidationResponse.payload;
-                          return new FetchKey(self.xqsdk)
-                            .supplyAsync({
-                              [Decrypt.LOCATOR_KEY]: locatorKey,
-                            })
-                            .then((serverResponse) => {
-                              switch (serverResponse.status) {
-                                case ServerResponse.OK: {
-                                  let key = serverResponse.payload;
-                                  console.info("Retrieved Key: " + key);
-                                  return serverResponse;
-                                }
-                                default: {
-                                  let error = serverResponse.payload;
-                                  try {
-                                    error = JSON.parse(error).status;
-                                  } catch (e) {
-                                    return;
-                                  }
-                                  console.error("failed , reason: ", error);
-                                  return serverResponse;
-                                }
-                              }
-                            })
-                            .then((na) => {
-                              if (na.status === ServerResponse.ERROR) {
-                                return na;
-                              }
-                              console.warn("Test Key Expiration");
-                              return new CheckKeyExpiration(self.xqsdk)
-                                .supplyAsync({
-                                  [Decrypt.LOCATOR_KEY]: locatorKey,
-                                })
-                                .then((serverResponse) => {
-                                  switch (serverResponse.status) {
-                                    case ServerResponse.OK: {
-                                      let data = serverResponse.payload;
-                                      let expiresInSeconds =
-                                        data[CheckKeyExpiration.EXPIRES_IN];
-                                      let expiresOn = new Date(
-                                        new Date().getTime() +
-                                          expiresInSeconds * 1000
-                                      );
-                                      console.info(
-                                        "Key Expires On " + expiresOn
-                                      );
-                                      return serverResponse;
-                                    }
-                                    default: {
-                                      let error = serverResponse.payload;
-                                      try {
-                                        error = JSON.parse(error).status;
-                                      } catch (e) {
-                                        return;
-                                      }
-                                      console.error("failed , reason: ", error);
-                                      return serverResponse;
-                                    }
-                                  }
-                                });
-                            })
-                            .then((na) => {
-                              if (na.status === ServerResponse.ERROR) {
-                                return na;
-                              }
-                              console.warn("Test Revoke Key Access");
+                      let data = serverResponse.payload;
 
-                              return new RevokeKeyAccess(self.xqsdk)
-                                .supplyAsync({
-                                  [RevokeKeyAccess.LOCATOR_KEY]: locatorKey,
-                                })
-                                .then((serverResponse) => {
-                                  switch (serverResponse.status) {
-                                    case ServerResponse.OK: {
-                                      let noContent = serverResponse.payload;
-                                      console.info("Data: " + noContent);
-                                      return serverResponse;
-                                    }
-                                    default: {
-                                      let error = serverResponse.payload;
-                                      try {
-                                        error = JSON.parse(error).status;
-                                      } catch (e) {
-                                        return;
-                                      }
-                                      console.error("failed , reason: ", error);
-                                      return serverResponse;
-                                    }
-                                  }
-                                });
-                            })
-                            .then((na) => {
-                              if (na.status === ServerResponse.ERROR) {
-                                return na;
-                              }
-                              console.warn("Test Revoke User Access");
+                      locatorToken = data[Encrypt.LOCATOR_KEY];
 
-                              let user = self.xqsdk
-                                .getCache()
-                                .getActiveProfile(true);
-
-                              return new RevokeUserAccess(self.xqsdk)
-                                .supplyAsync({
-                                  [RevokeUserAccess.USER]: user,
-                                  [RevokeUserAccess.RECIPIENTS]: [user],
-                                  [RevokeUserAccess.LOCATOR_KEY]: locatorKey,
-                                })
-                                .then((serverResponse) => {
-                                  switch (serverResponse.status) {
-                                    case ServerResponse.OK: {
-                                      let noContent = serverResponse.payload;
-                                      console.info(
-                                        "Status: " + ServerResponse.OK
-                                      );
-                                      console.info("Data: " + noContent);
-                                      return serverResponse;
-                                    }
-                                    default: {
-                                      let error = serverResponse.payload;
-                                      try {
-                                        error = JSON.parse(error).status;
-                                      } catch (e) {
-                                        return;
-                                      }
-                                      console.error("failed , reason: ", error);
-                                      return serverResponse;
-                                    }
-                                  }
-                                });
-                            })
-                            .then((na) => {
-                              if (na.status === ServerResponse.ERROR) {
-                                return na;
-                              }
-                              console.warn("Test Grant User Access");
-
-                              let user = self.xqsdk
-                                .getCache()
-                                .getActiveProfile(true);
-
-                              return new GrantUserAccess(self.xqsdk)
-                                .supplyAsync({
-                                  [GrantUserAccess.RECIPIENTS]: [user],
-                                  [GrantUserAccess.LOCATOR_TOKEN]: locatorKey,
-                                })
-                                .then((serverResponse) => {
-                                  switch (serverResponse.status) {
-                                    case ServerResponse.OK: {
-                                      let noContent = serverResponse.payload;
-                                      console.info(
-                                        "Status: " + ServerResponse.OK
-                                      );
-                                      console.info("Data: " + noContent);
-                                      return serverResponse;
-                                    }
-                                    default: {
-                                      let error = serverResponse.payload;
-                                      try {
-                                        error = JSON.parse(error).status;
-                                      } catch (e) {
-                                        return;
-                                      }
-                                      console.error("failed , reason: ", error);
-                                      return serverResponse;
-                                    }
-                                  }
-                                });
-                            });
-                        }
-                        default: {
-                          let error = packetValidationResponse.payload;
-                          try {
-                            error = JSON.parse(error).status;
-                          } catch (e) {
-                            return;
-                          }
-                          console.error("failed , reason: ", error);
-                          return packetValidationResponse;
-                        }
-                      }
+                      return serverResponse;
                     }
                     default: {
-                      let error = packetValidationResponse.payload;
+                      let error = serverResponse.payload;
                       try {
                         error = JSON.parse(error).status;
                       } catch (e) {
                         return;
                       }
                       console.error("failed , reason: ", error);
-                      return packetValidationResponse;
+                      return serverResponse;
                     }
                   }
+                })
+                .then(function (serverResponse) {
+                  if(serverResponse.status === ServerResponse.ERROR) {
+                    return  serverResponse;
+                  }
+                  console.info("Fetching Key ...");
+                  return new FetchKey(self.xqsdk).supplyAsync({
+                    [FetchKey.LOCATOR_KEY]: locatorToken,
+                  });
+                })
+                .then((serverResponse) => {
+                  switch (serverResponse.status) {
+                    case ServerResponse.OK: {
+                      let key = serverResponse.payload;
+                      console.info("Key fetched: " + key);
+                      return serverResponse;
+                    }
+                    default: {
+                      let error = serverResponse.payload;
+                      try {
+                        error = JSON.parse(error).status;
+                      } catch (e) {
+                        return;
+                      }
+                      console.error("failed , reason: ", error);
+                      return serverResponse;
+                    }
+                  }
+                })
+                .then((na) => {
+                  if (na.status === ServerResponse.ERROR) {
+                    return na;
+                  }
+                  console.warn("Test Key Expiration");
+                  return new CheckKeyExpiration(self.xqsdk)
+                    .supplyAsync({
+                      [Decrypt.LOCATOR_KEY]: locatorToken,
+                    })
+                    .then((serverResponse) => {
+                      switch (serverResponse.status) {
+                        case ServerResponse.OK: {
+                          let data = serverResponse.payload;
+                          let expiresInSeconds =
+                            data[CheckKeyExpiration.EXPIRES_IN];
+                          let expiresOn = new Date(
+                            new Date().getTime() + expiresInSeconds * 1000
+                          );
+                          console.info("Key Expires On " + expiresOn);
+                          return serverResponse;
+                        }
+                        default: {
+                          let error = serverResponse.payload;
+                          try {
+                            error = JSON.parse(error).status;
+                          } catch (e) {
+                            return;
+                          }
+                          console.error("failed , reason: ", error);
+                          return serverResponse;
+                        }
+                      }
+                    });
+                })
+                .then((na) => {
+                  if (na.status === ServerResponse.ERROR) {
+                    return na;
+                  }
+                  console.warn("Test Grant User Access");
+
+                  return new GrantUserAccess(self.xqsdk)
+                    .supplyAsync({
+                      [GrantUserAccess.RECIPIENTS]: [
+                        "additional-user@xqmsg.com",
+                      ],
+                      [GrantUserAccess.LOCATOR_TOKEN]: locatorToken,
+                    })
+                    .then((serverResponse) => {
+                      switch (serverResponse.status) {
+                        case ServerResponse.OK: {
+                          let noContent = serverResponse.payload;
+                          console.info("Status: " + ServerResponse.OK);
+                          console.info("Data: " + noContent);
+                          return serverResponse;
+                        }
+                        default: {
+                          let error = serverResponse.payload;
+                          try {
+                            error = JSON.parse(error).status;
+                          } catch (e) {
+                            return;
+                          }
+                          console.error("failed , reason: ", error);
+                          return serverResponse;
+                        }
+                      }
+                    });
+                })
+                .then((na) => {
+                  if (na.status === ServerResponse.ERROR) {
+                    return na;
+                  }
+                  console.warn("Test Revoke User Access");
+
+                  return new RevokeUserAccess(self.xqsdk)
+                    .supplyAsync({
+                      [RevokeUserAccess.RECIPIENTS]: [
+                        "additional-user@xqmsg.com",
+                      ],
+                      [RevokeUserAccess.LOCATOR_KEY]: locatorToken,
+                    })
+                    .then((serverResponse) => {
+                      switch (serverResponse.status) {
+                        case ServerResponse.OK: {
+                          let noContent = serverResponse.payload;
+                          console.info("Status: " + ServerResponse.OK);
+                          console.info("Data: " + noContent);
+                          return serverResponse;
+                        }
+                        default: {
+                          let error = serverResponse.payload;
+                          try {
+                            error = JSON.parse(error).status;
+                            // eslint-disable-next-line no-empty
+                          } catch (e) {}
+                          console.error("failed , reason: ", error);
+                          return serverResponse;
+                        }
+                      }
+                    });
+                })
+                .then((na) => {
+                  if (na.status === ServerResponse.ERROR) {
+                    return na;
+                  }
+                  console.warn("Test Revoke Key Access");
+
+                  return new RevokeKeyAccess(self.xqsdk)
+                    .supplyAsync({
+                      [RevokeKeyAccess.LOCATOR_TOKENS]: [locatorToken],
+                    })
+                    .then((serverResponse) => {
+                      switch (serverResponse.status) {
+                        case ServerResponse.OK: {
+                          let noContent = serverResponse.payload;
+                          console.info("Data: " + noContent);
+                          return serverResponse;
+                        }
+                        default: {
+                          let error = serverResponse.payload;
+                          try {
+                            error = JSON.parse(error).status;
+                            // eslint-disable-next-line no-empty
+                          } catch (e) {}
+                          console.error("failed , reason: ", error);
+                          return serverResponse;
+                        }
+                      }
+                    });
                 });
             } else {
               return new Promise((resolved) => {
@@ -1644,7 +1656,7 @@ export default class TestContainer {
 
     this.makeUsers = function (limit = 1) {
       let users = [];
-      for (var i = 0; i < limit; i++) {
+      for (let i = 0; i < limit; i++) {
         users[users.length] = `test-user-${parseInt(
           Math.random() * (1000 - 1) + 1
         )}@xqmsg.com`;

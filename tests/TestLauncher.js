@@ -27,10 +27,10 @@ oReq.addEventListener("load", function () {
   showInitialTestAgenda();
 
   function runAll() {
-    runTest(0);
+     runTest(0, true);
   }
 
-  function runTest(i) {
+  function runTest(i, executeNext) {
     if (i < tests.length) {
       let test = tests[i];
       if (test.enabled) {
@@ -58,22 +58,31 @@ oReq.addEventListener("load", function () {
                 checked: true,
                 disabled: true,
               });
+              if(errorMessage.indexOf("exceeded the usage allowed by your license rights") != -1){
+                $(`#${mkId(test.name)}`).css({
+                  "font-style": "italic",
+                  "color": "#cccccc",
+                });
+              }else{
               $(`#${mkId(test.name)}`).css({
                 "font-style": "italic",
                 "color": "#d22060",
               });
 
+              }
+
               $(`#${mkId(test.name)}`).append(
                 `<span style="margin: 0;"> [${errorMessage}]</span>`
               );
-
               break;
             }
           }
-          runTest(i + 1);
+          if(executeNext){
+             runTest(i + 1, true);
+          }
         });
       } else {
-        runTest(i + 1);
+         runTest(i + 1, executeNext);
       }
     }
   }
@@ -132,9 +141,7 @@ oReq.addEventListener("load", function () {
   }
 
   function doAuthorize(user) {
-    let authorize = new Authorize(xqsdk);
-
-    return authorize
+    return  new Authorize(xqsdk)
       .supplyAsync({ [Authorize.USER]: user, [Authorize.CODE_TYPE]: "pin" })
       .then((serverResponse) => {
         switch (serverResponse.status) {
@@ -212,7 +219,7 @@ oReq.addEventListener("load", function () {
     switch (clickEvent.currentTarget.id) {
       case "register-button": {
         const userEmail = $("#register-input").val();
-
+        document["currentUser"]=userEmail;
         doAuthorize(userEmail).then((serverResponse) => {
           switch (serverResponse.status) {
             case ServerResponse.OK: {
@@ -272,11 +279,14 @@ oReq.addEventListener("load", function () {
         break;
       }
       case "run-button": {
+        let currentUser = document["currentUser"];
+        xqsdk.getCache().putActiveProfile(currentUser);
         showInitialTestAgenda();
         runAll();
         break;
       }
       case "clear-credentials-button": {
+        document["currentUser"]=null;
         xqsdk.getCache().clearAllProfiles();
         showRegistrationScreen();
         showInitialTestAgenda();
